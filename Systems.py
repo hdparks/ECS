@@ -1,6 +1,3 @@
-from EntityManager import *
-from Components import *
-
 class System:
     """ A generic System template"""
     def __init__(self, EntityManager, template):
