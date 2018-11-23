@@ -9,6 +9,9 @@ class System:
         self.em = EntityManager
         self.ids = EntityManager.getComponentId(template)
 
-    def get_entities(self):
+    def get_entities(self, *components):
         """Query the EntityManager for all entities with necessary components"""
-        return self.em.get_entity_family(self.ids)
+        if components:
+            return self.em.get_entity_family(em.getComponentId(components))
+        else:
+            return self.em.get_entity_family(self.ids)
