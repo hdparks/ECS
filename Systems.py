@@ -12,6 +12,6 @@ class System:
     def get_entities(self, *components):
         """Query the EntityManager for all entities with necessary components"""
         if components:
-            return self.em.get_entity_family(em.getComponentId(components))
+            return self.em.get_entity_family(self.em.getComponentId(components))
         else:
             return self.em.get_entity_family(self.ids)

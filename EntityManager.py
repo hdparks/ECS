@@ -38,7 +38,7 @@ class EntityManager:
             self.total += 1
             self.add_component(e,args)
 
-    def add_component(self, entity, components):
+    def add_component(self, entity, *components):
         """ Adds a component to an entity through the following steps:
 
         Remove entity id from current entity family,
@@ -53,7 +53,7 @@ class EntityManager:
         self.add_to_family(entity)
 
 
-    def remove_component(self, entity, componentTypes):
+    def remove_component(self, entity, *componentTypes):
         """ Remove entity id from entity family of current components,
             Remove components from entity,
             Add entity id to entity family of new list of components
