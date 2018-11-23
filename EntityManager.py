@@ -1,10 +1,18 @@
-import numpy as np
-
 class Entity(dict):
     """An Entity has a unique id and a dictionary of Components"""
-    def __init__(self,id):
+    def __init__(self,id, *args):
         self.id = id;
         dict.__init__(self)
+        for a in args:
+            self[type(a)] = a
+
+    def add_component(self, *component_instances):
+        for c in component_instances:
+            self[type(c)] = c
+
+    def remove_component(self, *component_types):
+        for c in component_types:
+            self.pop(c)
 
 class EntityManager:
     """An EntityManager has two directives:
@@ -17,28 +25,21 @@ class EntityManager:
     entity_families = {}
     total = 0
 
-    def __init__(self, components):
-        """Initialize component_id_table, which maps each component type
-        to a unique int id.
-
-        Parameters:
-            components(list(Components)):
-            A list of all components which entities can take on.
-        """
-        self.component_id_table = \
-        { component:i for (i,component) in enumerate(components) }
+    def create_entity(self, *component_instances):
+        """Creates a new Entity instance with the given component instances"""
+        total = self.total
+        self.total += 1
+        return Entity(total, *component_instances)
 
 
-    def add_entity(self, *args, n=1):
+    def add_entity(self, *component_instances):
         """Construct new entity, incrementing self.total"""
 
-        for _ in range(n):
-            e = Entity(self.total)
+        e = self.create_entity(*component_instances)
             self.entities[e.id] = e
-            self.total += 1
-            self.add_component(e,*args)
+            self.add_to_family(e)
 
-    def add_component(self, entity, *components):
+    def add_component(self, entity, *component_instances):
         """ Adds a component to an entity through the following steps:
 
         Remove entity id from current entity family,
@@ -47,21 +48,19 @@ class EntityManager:
         """
         self.remove_from_family(entity)
 
-        for c in components:
-            entity[type(c)] = c
+        entity.add_component(*component_instances)
 
         self.add_to_family(entity)
 
 
-    def remove_component(self, entity, *componentTypes):
+    def remove_component(self, entity, *component_types):
         """ Remove entity id from entity family of current components,
             Remove components from entity,
             Add entity id to entity family of new list of components
         """
         self.remove_from_family(entity)
 
-        for c in componentTypes:
-            entity.pop(c)
+        entity.remove_component(*component_types)
 
         self.add_to_family(entity)
 
@@ -89,28 +88,24 @@ class EntityManager:
 
 
 
-    def get_entity_family(self, component_list, exact_match = False):
+    def get_entity_family(self, family_key, exact_match = False):
         """Returns: a list of all entities with the supplied components.
 
         If exact_match = True, returns only those entities which exactly match
         the given component template.
 
         Parameters:
-            component_list( list(int) | entity ): defines a list of components
+            family_key(tuple(int)): defines a family of entities with same components
 
             exact_match(boolean): If true, returns a list of Entities whose
                 component list exactly matches the given component_list
 
         """
 
-        # If an entity was passed in,
-        if type(component_list) == Entity:
-            component_list = self.get_component_id(list(component_list.keys()))
-
         if exact_match:
 
             try:
-                return self.entity_families[component_list]
+                return self.entity_families[family_key]
             except KeyError:
                 # If an exact match wasn't found, return an empty list
                 return []
@@ -118,23 +113,17 @@ class EntityManager:
         else:
 
             keys = list(self.entity_families.keys())
-            relevant_keys = []
+            entities = []
             for key in keys:
-                if all([id in key for id in component_list]):
-                    relevant_keys.append(key)
+                if all([id in key for id in family_key]):
+                    entities += self.entity_families[key])
 
-            return np.array([self.entity_families[key] for key in relevant_keys]).flatten().tolist()
+            return entities
 
 
-    def get_component_id(self, componentList):
+    def get_family_key(self, *component_list):
         """
-        Parameters:
-            component(list(Component))
-
-        Returns (list(int)) representing the ids of the supplied components,
-            sorted such that tupled list may be used as a key to an entity family
-
+        Parameters: any number of Component classes
+        Returns: sorted tuple of Components' ids, used as family key
         """
-        ids = [self.component_id_table[c] for c in componentList]
-        ids.sort()
-        return tuple(ids)
+        return tuple([c.component_id for c in component_list].sort())
