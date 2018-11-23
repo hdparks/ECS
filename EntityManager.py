@@ -18,14 +18,14 @@ class EntityManager:
     total = 0
 
     def __init__(self, components):
-        """Initialize componentIdTable, which maps each component type
+        """Initialize component_id_table, which maps each component type
         to a unique int id.
 
         Parameters:
             components(list(Components)):
             A list of all components which entities can take on.
         """
-        self.componentIdTable = \
+        self.component_id_table = \
         { component:i for (i,component) in enumerate(components) }
 
 
@@ -36,7 +36,7 @@ class EntityManager:
             e = Entity(self.total)
             self.entities[e.id] = e
             self.total += 1
-            self.add_component(e,args)
+            self.add_component(e,*args)
 
     def add_component(self, entity, *components):
         """ Adds a component to an entity through the following steps:
@@ -75,7 +75,7 @@ class EntityManager:
 
         # If this is a new family, add it to the entity families map
         if len(family) == 1:
-            self.entity_families[self.getComponentId(entity.keys())] = family
+            self.entity_families[self.get_component_id(entity.keys())] = family
 
 
     def remove_from_family(self, entity):
@@ -102,9 +102,10 @@ class EntityManager:
                 component list exactly matches the given component_list
 
         """
+
         # If an entity was passed in,
         if type(component_list) == Entity:
-            component_list = self.getComponentId(component_list.keys())
+            component_list = self.get_component_id(list(component_list.keys()))
 
         if exact_match:
 
@@ -122,11 +123,10 @@ class EntityManager:
                 if all([id in key for id in component_list]):
                     relevant_keys.append(key)
 
+            return np.array([self.entity_families[key] for key in relevant_keys]).flatten().tolist()
 
-            return np.array([self.entity_families[key] for key in relevant_keys]).flatten()
 
-
-    def getComponentId(self, component):
+    def get_component_id(self, componentList):
         """
         Parameters:
             component(list(Component))
@@ -135,6 +135,6 @@ class EntityManager:
             sorted such that tupled list may be used as a key to an entity family
 
         """
-        ids = [self.componentIdTable[c] for c in component]
+        ids = [self.component_id_table[c] for c in componentList]
         ids.sort()
         return tuple(ids)
