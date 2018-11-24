@@ -112,5 +112,5 @@ class EntityManager:
         Parameters: any number of Component classes
         Returns: All entities contiaining the given Components
         """
-        family_key = self.get_family_key(component_list)
+        family_key = self.get_family_key(*component_list)
         return self.get_entity_family(family_key)
