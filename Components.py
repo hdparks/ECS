@@ -4,6 +4,12 @@ All the logic is contained within Systems, which modify the data within
 Entities which are simply collections of Component instantiations
 """
 
-class Component:
-    """ A template Component. Literally, just a class. """
-    pass
+class Component(type):
+    """A generic component class"""
+    count = 0
+
+    def __new__(cls, name, bases, dct):
+        component_class = super().__new__(cls, name, bases, dct)
+        component_class.component_id = cls.count
+        cls.count += 1
+        return component_class

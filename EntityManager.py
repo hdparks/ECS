@@ -6,7 +6,7 @@ class Entity(dict):
         dict.__init__(self)
         for a in args:
             self[type(a)] = a
-        em.add_to_family(self)
+        self.em.add_to_family(self)
 
     def add_component(self, *component_instances):
         self.em.remove_from_family(self)
@@ -28,8 +28,9 @@ class EntityManager:
     for easy retrieval by systems working on a family of similar entities.
     """
     # Fields
-    entity_families = {}
-    total = 0
+    def __init__(self):
+        self.entity_families = {}
+        self.total = 0
 
     def create_entity(self, *component_instances):
         """Creates a new Entity instance with the given component instances"""
@@ -42,19 +43,21 @@ class EntityManager:
         """ Adds the entity to its corresponding entity family.
             If no such family exists, a suitable family is created.
         """
-        family = self.get_family_key(*entity.keys(), exact_match=True)
+        family_key = self.get_family_key(*entity.keys())
+        family = self.get_entity_family(family_key, exact_match=True)
         family.append(entity)
 
         # If this is a new family, add it to the entity families map
         if len(family) == 1:
-            self.entity_families[self.get_family_key(entity.keys())] = family
+            self.entity_families[family_key] = family
 
 
     def remove_from_family(self, entity):
         """Removes the entity from its entity family"""
+        family_key = self.get_family_key(*entity.keys())
+        family = self.get_entity_family(family_key,exact_match=True)
         try:
-            family_key = self.get_family_key(*entity.keys())
-            self.get_entity_family(family_key,exact_match=True).remove(entity)
+            family.remove(entity)
         except ValueError:
             # If the entity wasn't in the list, nothing happens
             # This may occur when the entity is first created and has no family
@@ -90,7 +93,7 @@ class EntityManager:
             entities = []
             for key in keys:
                 if all([id in key for id in family_key]):
-                    entities += self.entity_families[key])
+                    entities += self.entity_families[key]
 
             return entities
 
@@ -100,4 +103,14 @@ class EntityManager:
         Parameters: any number of Component classes
         Returns: sorted tuple of Components' ids, used as family key
         """
-        return tuple([c.component_id for c in component_list].sort())
+        cid_list = [c.component_id for c in component_list]
+        cid_list.sort()
+        return tuple(cid_list)
+
+    def get_entities_by_components(self, *component_list):
+        """
+        Parameters: any number of Component classes
+        Returns: All entities contiaining the given Components
+        """
+        family_key = self.get_family_key(component_list)
+        return self.get_entity_family(family_key)
