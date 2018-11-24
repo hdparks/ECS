@@ -1,18 +1,25 @@
 class Entity(dict):
     """An Entity has a unique id and a dictionary of Components"""
-    def __init__(self,id, *args):
+    def __init__(self,id,EntityManager, *args):
         self.id = id;
+        self.em = EntityManager
         dict.__init__(self)
         for a in args:
             self[type(a)] = a
+        em.add_to_family(self)
 
     def add_component(self, *component_instances):
+        self.em.remove_from_family(self)
         for c in component_instances:
             self[type(c)] = c
+        self.em.add_to_family(self)
 
     def remove_component(self, *component_types):
+        self.em.remove_from_family(self)
         for c in component_types:
             self.pop(c)
+        self.em.add_to_family(self)
+
 
 class EntityManager:
     """An EntityManager has two directives:
@@ -21,66 +28,33 @@ class EntityManager:
     for easy retrieval by systems working on a family of similar entities.
     """
     # Fields
-    entities = {}
     entity_families = {}
     total = 0
 
     def create_entity(self, *component_instances):
         """Creates a new Entity instance with the given component instances"""
         total = self.total
+        e = Entity(total, self, *component_instances)
         self.total += 1
-        return Entity(total, *component_instances)
-
-
-    def add_entity(self, *component_instances):
-        """Construct new entity, incrementing self.total"""
-
-        e = self.create_entity(*component_instances)
-            self.entities[e.id] = e
-            self.add_to_family(e)
-
-    def add_component(self, entity, *component_instances):
-        """ Adds a component to an entity through the following steps:
-
-        Remove entity id from current entity family,
-        Add component(s) to entity,
-        Add entity id to new entity family
-        """
-        self.remove_from_family(entity)
-
-        entity.add_component(*component_instances)
-
-        self.add_to_family(entity)
-
-
-    def remove_component(self, entity, *component_types):
-        """ Remove entity id from entity family of current components,
-            Remove components from entity,
-            Add entity id to entity family of new list of components
-        """
-        self.remove_from_family(entity)
-
-        entity.remove_component(*component_types)
-
-        self.add_to_family(entity)
-
+        return e
 
     def add_to_family(self, entity):
         """ Adds the entity to its corresponding entity family.
             If no such family exists, a suitable family is created.
         """
-        family = self.get_entity_family(entity, exact_match=True)
+        family = self.get_family_key(*entity.keys(), exact_match=True)
         family.append(entity)
 
         # If this is a new family, add it to the entity families map
         if len(family) == 1:
-            self.entity_families[self.get_component_id(entity.keys())] = family
+            self.entity_families[self.get_family_key(entity.keys())] = family
 
 
     def remove_from_family(self, entity):
         """Removes the entity from its entity family"""
         try:
-            self.get_entity_family(entity,exact_match=True).remove(entity)
+            family_key = self.get_family_key(*entity.keys())
+            self.get_entity_family(family_key,exact_match=True).remove(entity)
         except ValueError:
             # If the entity wasn't in the list, nothing happens
             # This may occur when the entity is first created and has no family

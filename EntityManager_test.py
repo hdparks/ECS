@@ -1,26 +1,23 @@
 from EntityManager import EntityManager, Entity
 import pytest
 
-def test_Entity_construction():
-    e = Entity(1)
-    assert e.id == 1, "Failed on Entity.id"
 
-    d = int(2)
-    e = Entity(1,d)
-    assert int in e.keys(), "Failed on dictionary creation"
-    assert e[int] == d, "Failed on dictionary lookup"
-
-def test_Entity_lookup():
-        e = Entity(1)
-        e[EntityManager] = 1
-        assert e[EntityManager] == 1, "Failed on Entity dictionary lookup"
-
-def test_Entity_Manager_construction():
+def test_EntityManager_construction():
     em = EntityManager()
+    assert em.total == 0
     assert em.entities == {}
     assert em.entity_families == {}
-    assert em.total == 0
 
-def test_EntityManager_add_entity():
+def test_Entity_construction():
     em = EntityManager()
-    em.add_entity()
+    e = em.create_entity(int(1),str('one'))
+    assert e.id == 0, "Failed on Entity.id"
+    assert list(e.keys()) == [int, str], "Failed on key definitions"
+    assert list(e.values()) == [1,'one'], "Failed on vaule definitions"
+    assert e[int] == 1, "Failed on dictionary lookup"
+    assert e.em == em, "Failed on EntityManager reference"
+    assert len(em.entity_families) >= 1, "Failed on adding entity to family"
+
+def test_EntityManager_add_to_family():
+    em = EntityManager()
+    e = em.create_entity()
