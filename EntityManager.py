@@ -4,9 +4,7 @@ class Entity(dict):
         self.id = id;
         self.em = EntityManager
         dict.__init__(self)
-        for a in args:
-            self[type(a)] = a
-        self.em.add_to_family(self)
+        self.add_component(*args)
 
     def handle_family_issues(func):
         def family_issues_wrapper(self,*args,**kwargs):
