@@ -11,7 +11,10 @@ class Entity(dict):
     def add_component(self, *component_instances):
         self.em.remove_from_family(self)
         for c in component_instances:
-            self[type(c)] = c
+            if c.from_component:
+                self[c.source_component] = c
+            else:
+                self[type(c)] = c
         self.em.add_to_family(self)
 
     def remove_component(self, *component_types):
@@ -26,16 +29,27 @@ class EntityManager:
     1.) Maintain dictionary mapping unique ids to an Entity (set of Components)
     2.) Maintain lists of all Entities with the same set of Components (families)
     for easy retrieval by systems working on a family of similar entities.
+
+    Fields:
+
+    entity_families (dict): Maps tuples to lists of Entities, where the tuples
+        are the sorted family keys defined by the ids of the source components
+        and pure component types in the keys of each Entity
+
+    total (int): The total number of Entities created in the lifetime of the
+        manager
+
+    sc_index (int): "Source index", determines the next source_id to be assigned
     """
     # Fields
     def __init__(self):
         self.entity_families = {}
         self.total = 0
+        self.sc_index = -1
 
     def create_entity(self, *component_instances):
         """Creates a new Entity instance with the given component instances"""
-        total = self.total
-        e = Entity(total, self, *component_instances)
+        e = Entity(self.total, self, *component_instances)
         self.total += 1
         return e
 
@@ -103,7 +117,10 @@ class EntityManager:
         Parameters: any number of Component classes
         Returns: sorted tuple of Components' ids, used as family key
         """
-        cid_list = [c.component_id for c in component_list]
+        # Takes source_id of source components, component_id of pure components
+        identify = lambda c : c.source_id if c.source_id else c.component_id
+
+        cid_list = [identify(c) for c in component_list]
         cid_list.sort()
         return tuple(cid_list)
 
@@ -114,3 +131,24 @@ class EntityManager:
         """
         family_key = self.get_family_key(*component_list)
         return self.get_entity_family(family_key)
+
+    def register_source_component(self, component_instance):
+        """
+        Source components can be used as Entity keys to access component
+        data within an Entity that is related to an external component instance.
+
+        For example, a student (Entity) could be taking many
+        different courses at once: instead of having a separate component
+        for every possible course, a student can map an instance of a Course
+        to that student's relevant data, and can map another Course instance
+        to different data. The two Courses are different sources of assignments,
+        grades, ect., so they could each be registered as different
+        source components.
+
+        Source components are assigned negative values beginning at -1 in order
+        to prevent collisions with the nonnegative component ids in family keys.
+        """
+        component_instance.source_id = self.sc_index
+        self.sc_index -= 1
+
+        return
