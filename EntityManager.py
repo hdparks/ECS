@@ -8,20 +8,27 @@ class Entity(dict):
             self[type(a)] = a
         self.em.add_to_family(self)
 
+    def handle_family_issues(func):
+        def family_issues_wrapper(self,*args,**kwargs):
+            self.em.remove_from_family(self)
+            output = func(self,*args,**kwargs)
+            self.em.add_to_family(self)
+            return output
+        return family_issues_wrapper
+
+
+    @handle_family_issues
     def add_component(self, *component_instances):
-        self.em.remove_from_family(self)
         for c in component_instances:
-            if c.from_component:
+            if hasattr(c,'source_component'):
                 self[c.source_component] = c
             else:
                 self[type(c)] = c
-        self.em.add_to_family(self)
 
+    @handle_family_issues
     def remove_component(self, *component_types):
-        self.em.remove_from_family(self)
         for c in component_types:
             self.pop(c)
-        self.em.add_to_family(self)
 
 
 class EntityManager:
@@ -118,7 +125,11 @@ class EntityManager:
         Returns: sorted tuple of Components' ids, used as family key
         """
         # Takes source_id of source components, component_id of pure components
-        identify = lambda c : c.source_id if c.source_id else c.component_id
+        def identify(c):
+            if hasattr(c,'source_id'):
+                return c.source_id
+            else:
+                return c.component_id
 
         cid_list = [identify(c) for c in component_list]
         cid_list.sort()
